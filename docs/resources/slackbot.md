@@ -38,6 +38,39 @@ resource "ccplant_slackbot" "example" {
 }
 ```
 
+### Team Scope
+
+```hcl
+resource "ccplant_slackbot" "team_example" {
+  name    = "engineering-team-slackbot"
+  scope   = "team"
+  team_id = var.team_id
+
+  teams                     = [var.team_id]
+  allowed_event_types       = ["message", "app_mention"]
+  allowed_channel_names     = ["eng-alerts"]
+  max_sessions              = 5
+  notify_on_session_created = true
+  allow_bot_messages        = false
+
+  session_config = {
+    initial_message_template = "Handle team Slack event: {{ .event.text }}"
+    tags = {
+      managed_by = "terraform"
+      scope      = "team"
+    }
+    params = {
+      agent_type = "claude"
+      oneshot    = false
+      auth_proxy = true
+    }
+  }
+}
+```
+
+`scope = "team"` makes the SlackBot owned by `team_id`. `teams` controls which
+team settings are merged into sessions created by the bot.
+
 ## Terraform Schema
 
 ### Required
