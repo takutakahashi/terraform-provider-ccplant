@@ -7,44 +7,52 @@ Manages a webhook through `POST /webhooks`, `GET /webhooks/{id}`,
 
 ```hcl
 resource "ccplant_webhook" "example" {
-  body_json = jsonencode({
-    name             = "github-pr-review"
-    scope            = "user"
-    type             = "github"
-    secret           = var.webhook_secret
-    signature_header = "X-Hub-Signature-256"
-    signature_type   = "hmac"
-    signature_prefix = "sha256="
-    github = {
-      allowed_events       = ["pull_request"]
-      allowed_repositories = ["org/repo"]
+  name             = "github-pr-review"
+  scope            = "user"
+  type             = "github"
+  secret           = var.webhook_secret
+  signature_header = "X-Hub-Signature-256"
+  signature_type   = "hmac"
+  signature_prefix = "sha256="
+  max_sessions     = 3
+
+  github = {
+    allowed_events       = ["pull_request"]
+    allowed_repositories = ["org/repo"]
+  }
+
+  triggers = [{
+    name          = "opened-pr"
+    priority      = 10
+    enabled       = true
+    stop_on_match = true
+    conditions = {
+      github = {
+        events  = ["pull_request"]
+        actions = ["opened", "reopened", "synchronize"]
+      }
     }
-    triggers = [{
-      name          = "opened-pr"
-      priority      = 10
-      enabled       = true
-      stop_on_match = true
-      conditions = {
-        github = {
-          events  = ["pull_request"]
-          actions = ["opened", "reopened", "synchronize"]
-        }
-      }
-      session_config = {
-        initial_message_template = "Review PR #{{ .pull_request.number }}"
-      }
-    }]
     session_config = {
-      tags = {
-        managed_by = "terraform"
-      }
-      params = {
-        agent_type = "claude"
-        oneshot    = false
-      }
+      initial_message_template = "Review PR #{{ .pull_request.number }}"
     }
-    max_sessions = 3
-  })
+  }]
+
+  session_config = {
+    tags = {
+      managed_by = "terraform"
+    }
+    params = {
+      message    = "Handle GitHub webhook payload."
+      agent_type = "claude"
+      oneshot    = false
+      auth_proxy = true
+    }
+  }
+}
+
+variable "webhook_secret" {
+  type      = string
+  sensitive = true
 }
 ```
 
@@ -52,27 +60,16 @@ resource "ccplant_webhook" "example" {
 
 ### Required
 
-- `body_json` (String) JSON request body.
-
-### Computed
-
-- `id` (String) Webhook ID.
-- `response_json` (String) Latest API response JSON.
-
-## `body_json` Parameters
-
-### Required
-
 - `name` (String) Webhook name.
-- `type` (String) `github` or `custom`.
+- `type` (String) `github` or `custom`. Create-only; changing it replaces the resource.
 - `triggers` (List of Object) At least one trigger.
 
 ### Optional
 
-- `scope` (String) `user` or `team`.
-- `team_id` (String) Required when `scope` is `team`.
-- `secret` (String) Webhook secret. Sensitive in practice, but this initial
-  provider stores `body_json` as a normal Terraform string.
+- `scope` (String) `user` or `team`. Create-only; changing it replaces the resource.
+- `team_id` (String) Required when `scope` is `team`. Create-only; changing it replaces the resource.
+- `status` (String) Webhook status.
+- `secret` (String, Sensitive) Webhook secret.
 - `signature_header` (String) Header containing the signature.
 - `signature_type` (String) `hmac` or `static`.
 - `signature_prefix` (String) Prefix stripped before verification.
@@ -86,13 +83,10 @@ resource "ccplant_webhook" "example" {
 - `allowed_events` (List of String) Allowed GitHub event names.
 - `allowed_repositories` (List of String) Allowed repositories.
 
-### Required `triggers` Fields
+### `triggers` Fields
 
-- `name` (String) Trigger name.
-
-### Optional `triggers` Fields
-
-- `id` (String) Trigger ID. Generated when omitted.
+- `name` (String, Required) Trigger name.
+- `id` (String, Optional/Computed) Trigger ID. Generated when omitted.
 - `priority` (Number) Trigger priority.
 - `enabled` (Boolean) Whether the trigger is enabled.
 - `conditions` (Object) Trigger conditions.
@@ -102,16 +96,15 @@ resource "ccplant_webhook" "example" {
 ### Optional `conditions` Fields
 
 - `go_template` (String) Go template expression.
-- `github` (Object) GitHub condition fields:
-  - `events`
-  - `actions`
-  - `branches`
-  - `repositories`
-  - `labels`
-  - `paths`
-  - `base_branches`
-  - `draft`
-  - `sender`
+- `github.events` (List of String)
+- `github.actions` (List of String)
+- `github.branches` (List of String)
+- `github.repositories` (List of String)
+- `github.labels` (List of String)
+- `github.paths` (List of String)
+- `github.base_branches` (List of String)
+- `github.draft` (Boolean)
+- `github.sender` (List of String)
 
 ### Optional `session_config` Fields
 
@@ -119,11 +112,28 @@ resource "ccplant_webhook" "example" {
 - `tags` (Map of String) Session tags.
 - `initial_message_template` (String) Template for new sessions.
 - `reuse_message_template` (String) Template for reused sessions.
-- `params` (Object) Session parameters. Common fields include `message`,
-  `agent_type`, `oneshot`, and `auth_proxy`.
+- `params` (Object) Session parameters.
 - `reuse_session` (Boolean) Reuse matching sessions.
 - `mount_payload` (Boolean) Mount webhook payload in the session.
 - `session_profile_id` (String) Session profile ID.
+
+### Optional `session_config.params` Fields
+
+- `message` (String) Initial message.
+- `agent_type` (String) Agent type.
+- `oneshot` (Boolean) Whether the session runs in one-shot mode.
+- `auth_proxy` (Boolean) Whether auth proxy behavior is enabled.
+- `repo_full_name` (String) GitHub repository full name.
+
+### Computed
+
+- `id` (String) Webhook ID.
+- `user_id` (String) Owner user ID.
+- `webhook_url` (String) Delivery URL.
+- `delivery_count` (Number) Total delivery count.
+- `created_at` (String) Creation timestamp.
+- `updated_at` (String) Last update timestamp.
+- `response_json` (String) Latest normalized API response JSON.
 
 ## Import
 
@@ -132,4 +142,3 @@ Import by webhook ID:
 ```bash
 terraform import ccplant_webhook.example <webhook-id>
 ```
-

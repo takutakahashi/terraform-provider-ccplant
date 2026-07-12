@@ -210,17 +210,3 @@ func extractID(body []byte) (string, error) {
 
 	return "", fmt.Errorf("response must include an id field")
 }
-
-func normalizeJSON(body []byte) string {
-	var value any
-	if err := json.Unmarshal(body, &value); err != nil {
-		return string(body)
-	}
-
-	normalized, err := json.Marshal(value)
-	if err != nil {
-		return string(body)
-	}
-
-	return string(normalized)
-}

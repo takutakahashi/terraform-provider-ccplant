@@ -32,10 +32,14 @@ provider "ccplant" {
 
 ## State and Secrets
 
-The initial provider version uses JSON request bodies directly. Resource
-`body_json` values are stored as Terraform configuration and state. Avoid
-putting long-lived secrets in `body_json` when a server-side reference, such as
-a Kubernetes Secret name, is available.
+`ccplant_memory`, `ccplant_sandbox_policy`, and `ccplant_schedule` use typed
+Terraform attributes. `ccplant_webhook`, `ccplant_slackbot`, and
+`ccplant_session_profile` currently use `body_json` request bodies until they
+are migrated.
+
+Sensitive values placed in `body_json`, such as webhook secrets or Slack
+tokens, live in Terraform state. Prefer server-side Secret references for Slack
+tokens when possible.
 
 ## Resources
 

@@ -8,42 +8,41 @@ Manages a sandbox policy through `POST /sandbox-policies`,
 
 ```hcl
 resource "ccplant_sandbox_policy" "example" {
-  body_json = jsonencode({
-    name            = "restricted-network"
-    description     = "Allow only approved domains."
-    scope           = "user"
-    allowed_domains = ["example.com"]
-    denied_domains  = ["blocked.example.com"]
-    count_mode      = true
-  })
+  name        = "terraform-example-policy"
+  description = "Sandbox policy managed by terraform-provider-ccplant."
+  scope       = "user"
+
+  allowed_domains = ["example.com"]
+  denied_domains  = ["blocked.example.com"]
+  count_mode      = true
 }
 ```
 
-## Terraform Schema
-
-### Required
-
-- `body_json` (String) JSON request body.
-
-### Computed
-
-- `id` (String) Sandbox policy ID.
-- `response_json` (String) Latest API response JSON.
-
-## `body_json` Parameters
+## Schema
 
 ### Required
 
 - `name` (String) Policy name.
-- `scope` (String) `user` or `team`.
+- `scope` (String) Ownership scope: `user` or `team`. This field is only sent
+  on create; changing it requires replacement.
 
 ### Optional
 
 - `description` (String) Policy description.
-- `allowed_domains` (List of String) Allowed domains.
-- `denied_domains` (List of String) Denied domains.
-- `count_mode` (Boolean) Count policy hits instead of enforcing.
-- `team_id` (String) Required when `scope` is `team`.
+- `allowed_domains` (List of String) Domains allowed by the sandbox policy.
+- `denied_domains` (List of String) Domains denied by the sandbox policy.
+- `count_mode` (Boolean) Whether the policy counts matches instead of enforcing.
+- `team_id` (String) Team identifier. Required by agentapi-proxy when
+  `scope` is `team`. This field is only sent on create; changing it requires
+  replacement.
+
+### Computed
+
+- `id` (String) Sandbox policy ID.
+- `owner_id` (String) Owner user ID.
+- `created_at` (String) Creation timestamp.
+- `updated_at` (String) Last update timestamp.
+- `response_json` (String) Latest normalized API response.
 
 ## Import
 
@@ -52,4 +51,3 @@ Import by sandbox policy ID:
 ```bash
 terraform import ccplant_sandbox_policy.example <sandbox-policy-id>
 ```
-

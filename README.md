@@ -34,19 +34,11 @@ See [provider documentation](docs/index.md) for the complete schema.
 
 ## Resources
 
-The initial provider version uses JSON request bodies directly. Each resource
-has the same Terraform-level attributes:
-
-- `body_json` (required): JSON body sent to agentapi-proxy on create and update.
-- `id` (computed): resource ID assigned by agentapi-proxy.
-- `response_json` (computed): latest JSON response from agentapi-proxy.
-
-Because `body_json` is a normal Terraform string in the initial provider
-version, values such as webhook secrets or Slack tokens can be stored in
-Terraform state if you put them there. Prefer references to server-side
-Kubernetes Secrets when possible.
-
-Supported resources:
+Resources support create, read, update, delete, and import by agentapi-proxy
+resource ID. `ccplant_memory`, `ccplant_sandbox_policy`, and
+`ccplant_schedule` expose typed Terraform attributes. `ccplant_webhook`,
+`ccplant_slackbot`, and `ccplant_session_profile` currently use `body_json`
+request bodies until they are migrated.
 
 - [`ccplant_memory`](docs/resources/memory.md)
 - [`ccplant_session_profile`](docs/resources/session_profile.md)
@@ -54,6 +46,15 @@ Supported resources:
 - [`ccplant_schedule`](docs/resources/schedule.md)
 - [`ccplant_webhook`](docs/resources/webhook.md)
 - [`ccplant_slackbot`](docs/resources/slackbot.md)
+
+For typed resources, managed fields are refreshed from API responses so drift is
+visible in plans. JSON resources expose `body_json` and `response_json`; drift
+is visible in `response_json`, but Terraform compares desired changes through
+`body_json`.
+
+Sensitive values placed in JSON resource `body_json`, such as webhook secrets or
+Slack tokens, live in Terraform state. Prefer server-side Secret references for
+Slack tokens when possible.
 
 ## Data Sources
 
@@ -74,9 +75,8 @@ terraform import ccplant_webhook.example <webhook-id>
 terraform import ccplant_slackbot.example <slackbot-id>
 ```
 
-After import, keep the matching `body_json` in configuration and run
-`terraform plan`. Terraform may need one update after import to store
-`body_json` in state.
+After import, `terraform plan` shows any differences between configuration and
+the API-populated state.
 
 ## Examples
 

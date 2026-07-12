@@ -7,33 +7,34 @@ Manages a SlackBot through `POST /slackbots`, `GET /slackbots/{id}`,
 
 ```hcl
 resource "ccplant_slackbot" "example" {
-  body_json = jsonencode({
-    name                  = "engineering-slackbot"
-    scope                 = "user"
-    allowed_event_types   = ["message", "app_mention"]
-    allowed_channel_names = ["eng-alerts"]
-    allowed_user_ids      = ["U0123456789"]
-    max_sessions          = 5
-    notify_on_session_created = true
-    allow_bot_messages        = false
-    session_config = {
-      initial_message_template = "Handle Slack event: {{ .event.text }}"
-      reuse_message_template   = "Continue Slack event: {{ .event.text }}"
-      tags = {
-        managed_by = "terraform"
-      }
-      environment = {
-        LOG_LEVEL = "info"
-      }
-      params = {
-        agent_type = "claude"
-        oneshot    = false
-      }
-      memory_key = {
-        channel = "eng-alerts"
-      }
+  name                      = "engineering-slackbot"
+  scope                     = "user"
+  allowed_event_types       = ["message", "app_mention"]
+  allowed_channel_names     = ["eng-alerts"]
+  allowed_user_ids          = ["U0123456789"]
+  max_sessions              = 5
+  notify_on_session_created = true
+  allow_bot_messages        = false
+
+  session_config = {
+    initial_message_template = "Handle Slack event: {{ .event.text }}"
+    reuse_message_template   = "Continue Slack event: {{ .event.text }}"
+    tags = {
+      managed_by = "terraform"
     }
-  })
+    environment = {
+      LOG_LEVEL = "info"
+    }
+    params = {
+      agent_type     = "claude"
+      oneshot        = false
+      auth_proxy     = true
+      repo_full_name = "org/repo"
+    }
+    memory_key = {
+      channel = "eng-alerts"
+    }
+  }
 }
 ```
 
@@ -41,26 +42,15 @@ resource "ccplant_slackbot" "example" {
 
 ### Required
 
-- `body_json` (String) JSON request body.
-
-### Computed
-
-- `id` (String) SlackBot ID.
-- `response_json` (String) Latest API response JSON.
-
-## `body_json` Parameters
-
-### Required
-
 - `name` (String) SlackBot name.
 
 ### Optional
 
-- `scope` (String) `user` or `team`.
-- `team_id` (String) Required when `scope` is `team`.
+- `scope` (String) `user` or `team`. Create-only; changing it replaces the resource.
+- `team_id` (String) Required when `scope` is `team`. Create-only; changing it replaces the resource.
 - `teams` (List of String) Team IDs whose settings are merged into sessions.
-- `bot_token_secret_name` (String) Kubernetes Secret name containing Slack
-  tokens.
+- `status` (String) SlackBot status.
+- `bot_token_secret_name` (String) Kubernetes Secret name containing Slack tokens.
 - `bot_token_secret_key` (String) Secret key for the bot token.
 - `app_token_secret_key` (String) Secret key for the app token.
 - `allowed_event_types` (List of String) Allowed Slack event types.
@@ -68,13 +58,10 @@ resource "ccplant_slackbot" "example" {
 - `allowed_user_ids` (List of String) Allowed Slack user IDs.
 - `session_config` (Object) Session config for sessions created by this bot.
 - `max_sessions` (Number) Maximum concurrent sessions.
-- `notify_on_session_created` (Boolean) Notify in Slack when a session is
-  created.
+- `notify_on_session_created` (Boolean) Notify in Slack when a session is created.
 - `allow_bot_messages` (Boolean) Process messages from bots.
-- `bot_token` (String) Write-only Slack bot token. Sensitive in practice, but
-  this initial provider stores `body_json` as a normal Terraform string.
-- `app_token` (String) Write-only Slack app token. Sensitive in practice, but
-  this initial provider stores `body_json` as a normal Terraform string.
+- `bot_token` (String, Sensitive) Write-only Slack bot token.
+- `app_token` (String, Sensitive) Write-only Slack app token.
 
 ### Optional `session_config` Fields
 
@@ -82,9 +69,23 @@ resource "ccplant_slackbot" "example" {
 - `reuse_message_template` (String) Template for reused sessions.
 - `tags` (Map of String) Session tags.
 - `environment` (Map of String) Environment variables.
-- `params` (Object) Session parameters. Common fields include `agent_type`,
-  `oneshot`, `auth_proxy`, and `repo_full_name`.
+- `params` (Object) Session parameters.
 - `memory_key` (Map of String) Memory lookup tags.
+
+### Optional `session_config.params` Fields
+
+- `agent_type` (String) Agent type.
+- `oneshot` (Boolean) Whether the session runs in one-shot mode.
+- `auth_proxy` (Boolean) Whether auth proxy behavior is enabled.
+- `repo_full_name` (String) GitHub repository full name.
+
+### Computed
+
+- `id` (String) SlackBot ID.
+- `user_id` (String) Owner user ID.
+- `created_at` (String) Creation timestamp.
+- `updated_at` (String) Last update timestamp.
+- `response_json` (String) Latest normalized API response JSON.
 
 ## Import
 
@@ -93,4 +94,3 @@ Import by SlackBot ID:
 ```bash
 terraform import ccplant_slackbot.example <slackbot-id>
 ```
-
