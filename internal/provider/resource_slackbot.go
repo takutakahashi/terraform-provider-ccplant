@@ -29,7 +29,6 @@ type slackbotModel struct {
 	Status                 types.String `tfsdk:"status"`
 	BotTokenSecretName     types.String `tfsdk:"bot_token_secret_name"`
 	BotTokenSecretKey      types.String `tfsdk:"bot_token_secret_key"`
-	AppTokenSecretKey      types.String `tfsdk:"app_token_secret_key"`
 	AllowedEventTypes      types.List   `tfsdk:"allowed_event_types"`
 	AllowedChannelNames    types.List   `tfsdk:"allowed_channel_names"`
 	AllowedUserIDs         types.List   `tfsdk:"allowed_user_ids"`
@@ -70,7 +69,6 @@ type slackbotPayload struct {
 	Status                 string                 `json:"status,omitempty"`
 	BotTokenSecretName     string                 `json:"bot_token_secret_name,omitempty"`
 	BotTokenSecretKey      string                 `json:"bot_token_secret_key,omitempty"`
-	AppTokenSecretKey      string                 `json:"app_token_secret_key,omitempty"`
 	AllowedEventTypes      []string               `json:"allowed_event_types,omitempty"`
 	AllowedChannelNames    []string               `json:"allowed_channel_names,omitempty"`
 	AllowedUserIDs         []string               `json:"allowed_user_ids,omitempty"`
@@ -137,17 +135,16 @@ func (r *slackbotResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:            true,
 				MarkdownDescription: "Team IDs whose settings are merged into sessions created by this bot.",
 			},
-			"status":                    schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "SlackBot status."},
-			"bot_token_secret_name":     schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Kubernetes Secret name containing Slack tokens."},
-			"bot_token_secret_key":      schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Secret key containing the Slack bot token."},
-			"app_token_secret_key":      schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Secret key containing the Slack app token."},
+			"status":                    schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "SlackBot status."},
+			"bot_token_secret_name":     schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Kubernetes Secret name containing Slack tokens."},
+			"bot_token_secret_key":      schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Secret key containing the Slack bot token."},
 			"allowed_event_types":       stringListAttribute("Allowed Slack event types."),
 			"allowed_channel_names":     stringListAttribute("Allowed Slack channel names."),
 			"allowed_user_ids":          stringListAttribute("Allowed Slack user IDs."),
 			"session_config":            slackbotSessionConfigAttribute(),
-			"max_sessions":              schema.Int64Attribute{Optional: true, Computed: true, MarkdownDescription: "Maximum concurrent sessions created by this bot."},
-			"notify_on_session_created": schema.BoolAttribute{Optional: true, Computed: true, MarkdownDescription: "Whether the bot posts a Slack message when creating a session."},
-			"allow_bot_messages":        schema.BoolAttribute{Optional: true, Computed: true, MarkdownDescription: "Whether the bot processes messages posted by other bots."},
+			"max_sessions":              schema.Int64Attribute{Optional: true, Computed: true, PlanModifiers: useStateInt64(), MarkdownDescription: "Maximum concurrent sessions created by this bot."},
+			"notify_on_session_created": schema.BoolAttribute{Optional: true, Computed: true, PlanModifiers: useStateBool(), MarkdownDescription: "Whether the bot posts a Slack message when creating a session."},
+			"allow_bot_messages":        schema.BoolAttribute{Optional: true, Computed: true, PlanModifiers: useStateBool(), MarkdownDescription: "Whether the bot processes messages posted by other bots."},
 			"bot_token":                 schema.StringAttribute{Optional: true, Sensitive: true, MarkdownDescription: "Write-only Slack bot token."},
 			"app_token":                 schema.StringAttribute{Optional: true, Sensitive: true, MarkdownDescription: "Write-only Slack app token."},
 			"user_id":                   computedStringAttribute("User ID that owns the SlackBot."),
@@ -242,7 +239,6 @@ func (r *slackbotResource) request(ctx context.Context, model slackbotModel, dia
 		Teams:                  stringListFromTerraform(ctx, model.Teams, diags),
 		BotTokenSecretName:     optionalString(model.BotTokenSecretName),
 		BotTokenSecretKey:      optionalString(model.BotTokenSecretKey),
-		AppTokenSecretKey:      optionalString(model.AppTokenSecretKey),
 		AllowedEventTypes:      stringListFromTerraform(ctx, model.AllowedEventTypes, diags),
 		AllowedChannelNames:    stringListFromTerraform(ctx, model.AllowedChannelNames, diags),
 		AllowedUserIDs:         stringListFromTerraform(ctx, model.AllowedUserIDs, diags),
@@ -275,7 +271,6 @@ func (r *slackbotResource) applyResponse(ctx context.Context, body []byte, model
 	model.Status = stringOrNull(payload.Status)
 	model.BotTokenSecretName = stringOrEmptyState(payload.BotTokenSecretName, model.BotTokenSecretName)
 	model.BotTokenSecretKey = stringOrEmptyState(payload.BotTokenSecretKey, model.BotTokenSecretKey)
-	model.AppTokenSecretKey = stringOrEmptyState(payload.AppTokenSecretKey, model.AppTokenSecretKey)
 	model.AllowedEventTypes = listToTerraformPreserveEmpty(ctx, payload.AllowedEventTypes, model.AllowedEventTypes, diags)
 	model.AllowedChannelNames = listToTerraformPreserveEmpty(ctx, payload.AllowedChannelNames, model.AllowedChannelNames, diags)
 	model.AllowedUserIDs = listToTerraformPreserveEmpty(ctx, payload.AllowedUserIDs, model.AllowedUserIDs, diags)
@@ -380,15 +375,17 @@ func slackbotSessionConfigAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		Optional:            true,
 		Computed:            true,
+		PlanModifiers:       useStateObject(),
 		MarkdownDescription: "Session configuration for sessions created by this SlackBot.",
 		Attributes: map[string]schema.Attribute{
-			"initial_message_template": schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Template for initial session messages."},
-			"reuse_message_template":   schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Template for reused-session messages."},
+			"initial_message_template": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for initial session messages."},
+			"reuse_message_template":   schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for reused-session messages."},
 			"tags":                     stringMapAttribute("Tags applied to created sessions."),
 			"environment":              stringMapAttribute("Environment variables for created sessions."),
 			"params": schema.SingleNestedAttribute{
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       useStateObject(),
 				MarkdownDescription: "SlackBot session parameters.",
 				Attributes:          genericSessionParamsAttributes(false),
 			},
@@ -417,6 +414,7 @@ func stringMapAttribute(description string) schema.MapAttribute {
 		ElementType:         types.StringType,
 		Optional:            true,
 		Computed:            true,
+		PlanModifiers:       useStateMap(),
 		MarkdownDescription: description,
 	}
 }
@@ -426,6 +424,7 @@ func stringListAttribute(description string) schema.ListAttribute {
 		ElementType:         types.StringType,
 		Optional:            true,
 		Computed:            true,
+		PlanModifiers:       useStateList(),
 		MarkdownDescription: description,
 	}
 }

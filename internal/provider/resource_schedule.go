@@ -465,7 +465,7 @@ func stringOrEmptyState(value string, current types.String) types.String {
 	if value != "" {
 		return types.StringValue(value)
 	}
-	if !current.IsNull() && !current.IsUnknown() && current.ValueString() == "" {
+	if !current.IsNull() && !current.IsUnknown() {
 		return current
 	}
 	return types.StringNull()

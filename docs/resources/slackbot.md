@@ -52,7 +52,6 @@ resource "ccplant_slackbot" "example" {
 - `status` (String) SlackBot status.
 - `bot_token_secret_name` (String) Kubernetes Secret name containing Slack tokens.
 - `bot_token_secret_key` (String) Secret key for the bot token.
-- `app_token_secret_key` (String) Secret key for the app token.
 - `allowed_event_types` (List of String) Allowed Slack event types.
 - `allowed_channel_names` (List of String) Allowed Slack channel name patterns.
 - `allowed_user_ids` (List of String) Allowed Slack user IDs.

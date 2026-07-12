@@ -35,10 +35,8 @@ See [provider documentation](docs/index.md) for the complete schema.
 ## Resources
 
 Resources support create, read, update, delete, and import by agentapi-proxy
-resource ID. `ccplant_memory`, `ccplant_sandbox_policy`, and
-`ccplant_schedule` expose typed Terraform attributes. `ccplant_webhook`,
-`ccplant_slackbot`, and `ccplant_session_profile` currently use `body_json`
-request bodies until they are migrated.
+resource ID. All resources expose typed Terraform attributes based on the
+agentapi-proxy API request and response schemas.
 
 - [`ccplant_memory`](docs/resources/memory.md)
 - [`ccplant_session_profile`](docs/resources/session_profile.md)
@@ -47,14 +45,13 @@ request bodies until they are migrated.
 - [`ccplant_webhook`](docs/resources/webhook.md)
 - [`ccplant_slackbot`](docs/resources/slackbot.md)
 
-For typed resources, managed fields are refreshed from API responses so drift is
-visible in plans. JSON resources expose `body_json` and `response_json`; drift
-is visible in `response_json`, but Terraform compares desired changes through
-`body_json`.
+Managed fields are refreshed from API responses so drift is visible in plans.
+Each resource also exposes `response_json` for debugging the latest normalized
+API response.
 
-Sensitive values placed in JSON resource `body_json`, such as webhook secrets or
-Slack tokens, live in Terraform state. Prefer server-side Secret references for
-Slack tokens when possible.
+Webhook secrets and Slack tokens are marked sensitive, but Terraform still
+stores sensitive values in state. Prefer server-side Secret references for Slack
+tokens when possible.
 
 ## Data Sources
 

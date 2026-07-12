@@ -336,22 +336,26 @@ func profileConfigAttributes() map[string]schema.Attribute {
 		"initial_message_template": schema.StringAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateString(),
 			MarkdownDescription: "Template for initial session messages.",
 		},
 		"reuse_message_template": schema.StringAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateString(),
 			MarkdownDescription: "Template for messages sent to reused sessions.",
 		},
 		"params": schema.SingleNestedAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateObject(),
 			MarkdownDescription: "Session parameters.",
 			Attributes:          genericSessionParamsAttributes(true),
 		},
 		"reuse_session": schema.BoolAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateBool(),
 			MarkdownDescription: "Reuse matching sessions instead of creating new sessions.",
 		},
 		"memory_key": schema.MapAttribute{
@@ -363,11 +367,13 @@ func profileConfigAttributes() map[string]schema.Attribute {
 		"sandbox_policy_id": schema.StringAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateString(),
 			MarkdownDescription: "Sandbox policy ID applied to sessions.",
 		},
 		"session_ttl": schema.StringAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateString(),
 			MarkdownDescription: "Session TTL as a Go duration string.",
 		},
 		"unsynced_file_paths": schema.ListAttribute{
@@ -440,21 +446,23 @@ func genericSessionParamsToTerraform(ctx context.Context, payload *sessionParams
 
 func genericSessionParamsAttributes(includeMessage bool) map[string]schema.Attribute {
 	attrs := map[string]schema.Attribute{
-		"agent_type": schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Agent type passed to agentapi-proxy."},
-		"oneshot":    schema.BoolAttribute{Optional: true, Computed: true, MarkdownDescription: "Whether the session should run in one-shot mode."},
+		"agent_type": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Agent type passed to agentapi-proxy."},
+		"oneshot":    schema.BoolAttribute{Optional: true, Computed: true, PlanModifiers: useStateBool(), MarkdownDescription: "Whether the session should run in one-shot mode."},
 		"auth_proxy": schema.BoolAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateBool(),
 			MarkdownDescription: "Whether auth proxy behavior is enabled for the session.",
 		},
 		"repo_full_name": schema.StringAttribute{
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers:       useStateString(),
 			MarkdownDescription: "GitHub repository full name used when creating sessions.",
 		},
 	}
 	if includeMessage {
-		attrs["message"] = schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Initial message sent to the agent session."}
+		attrs["message"] = schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Initial message sent to the agent session."}
 	}
 	return attrs
 }

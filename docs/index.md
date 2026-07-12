@@ -32,13 +32,13 @@ provider "ccplant" {
 
 ## State and Secrets
 
-`ccplant_memory`, `ccplant_sandbox_policy`, and `ccplant_schedule` use typed
-Terraform attributes. `ccplant_webhook`, `ccplant_slackbot`, and
-`ccplant_session_profile` currently use `body_json` request bodies until they
-are migrated.
+All resources use typed Terraform attributes based on the agentapi-proxy API
+request and response schemas. Managed fields are refreshed from API responses,
+and each resource exposes `response_json` for debugging the latest normalized
+API response.
 
-Sensitive values placed in `body_json`, such as webhook secrets or Slack
-tokens, live in Terraform state. Prefer server-side Secret references for Slack
+Webhook secrets and Slack tokens are marked sensitive, but Terraform still
+stores sensitive values in state. Prefer server-side Secret references for Slack
 tokens when possible.
 
 ## Resources
