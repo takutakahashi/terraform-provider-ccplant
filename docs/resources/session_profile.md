@@ -41,6 +41,37 @@ resource "ccplant_session_profile" "example" {
 }
 ```
 
+### Team Scope
+
+```hcl
+resource "ccplant_session_profile" "team_example" {
+  name        = "terraform-example-team-profile"
+  description = "Team-scoped session profile managed by terraform-provider-ccplant."
+  scope       = "team"
+  team_id     = var.team_id
+
+  selector_tags = {
+    managed_by = "terraform"
+    profile    = "team-example"
+  }
+
+  config = {
+    tags = {
+      managed_by = "terraform"
+      scope      = "team"
+    }
+    params = {
+      message    = "Start from the Terraform-managed team profile."
+      agent_type = "claude"
+      oneshot    = false
+      auth_proxy = true
+    }
+  }
+}
+```
+
+`scope = "team"` makes the session profile owned by `team_id`.
+
 ## Terraform Schema
 
 ### Required

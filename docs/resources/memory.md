@@ -17,6 +17,24 @@ resource "ccplant_memory" "example" {
 }
 ```
 
+### Team Scope
+
+```hcl
+resource "ccplant_memory" "team_example" {
+  title   = "Terraform managed team memory"
+  content = "This team-scoped memory entry is managed by terraform-provider-ccplant."
+  scope   = "team"
+  team_id = var.team_id
+
+  tags = {
+    managed_by = "terraform"
+    scope      = "team"
+  }
+}
+```
+
+`scope = "team"` makes the memory entry owned by `team_id`.
+
 ## Schema
 
 ### Required

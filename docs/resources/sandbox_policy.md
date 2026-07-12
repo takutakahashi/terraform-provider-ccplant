@@ -18,6 +18,23 @@ resource "ccplant_sandbox_policy" "example" {
 }
 ```
 
+### Team Scope
+
+```hcl
+resource "ccplant_sandbox_policy" "team_example" {
+  name        = "terraform-example-team-policy"
+  description = "Team-scoped sandbox policy managed by terraform-provider-ccplant."
+  scope       = "team"
+  team_id     = var.team_id
+
+  allowed_domains = ["example.com"]
+  denied_domains  = ["blocked.example.com"]
+  count_mode      = true
+}
+```
+
+`scope = "team"` makes the sandbox policy owned by `team_id`.
+
 ## Schema
 
 ### Required
