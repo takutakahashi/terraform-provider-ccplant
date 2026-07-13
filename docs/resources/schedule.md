@@ -83,13 +83,13 @@ The API requires at least one of:
 - `execution_count` (Number) Total execution count.
 - `created_at` (String) Creation timestamp.
 - `updated_at` (String) Last update timestamp.
-- `response_json` (String) Latest normalized API response.
+- `response_json` (String, Sensitive) Latest normalized API response.
 
 ## `session_config` Fields
 
 Optional fields:
 
-- `environment` (Map of String) Environment variables.
+- `environment` (Map of String, Sensitive) Environment variables.
 - `tags` (Map of String) Session tags.
 - `params` (Object) Session parameters.
 - `memory_key` (Map of String) Memory lookup tags.

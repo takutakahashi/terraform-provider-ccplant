@@ -89,7 +89,7 @@ resource "ccplant_session_profile" "team_example" {
 
 ### Optional `config` Fields
 
-- `environment` (Map of String) Environment variables.
+- `environment` (Map of String, Sensitive) Environment variables.
 - `tags` (Map of String) Tags for created sessions.
 - `initial_message_template` (String) Template for new sessions.
 - `reuse_message_template` (String) Template for reused sessions.
@@ -114,7 +114,7 @@ resource "ccplant_session_profile" "team_example" {
 - `user_id` (String) Owner user ID.
 - `created_at` (String) Creation timestamp.
 - `updated_at` (String) Last update timestamp.
-- `response_json` (String) Latest normalized API response JSON.
+- `response_json` (String, Sensitive) Latest normalized API response JSON.
 
 ## Import
 

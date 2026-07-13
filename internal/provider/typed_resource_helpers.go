@@ -71,6 +71,7 @@ func idAttribute() schema.StringAttribute {
 func responseJSONAttribute() schema.StringAttribute {
 	return schema.StringAttribute{
 		Computed:            true,
+		Sensitive:           true,
 		MarkdownDescription: "Latest normalized JSON response returned by agentapi-proxy.",
 	}
 }

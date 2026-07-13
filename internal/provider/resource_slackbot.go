@@ -381,7 +381,7 @@ func slackbotSessionConfigAttribute() schema.SingleNestedAttribute {
 			"initial_message_template": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for initial session messages."},
 			"reuse_message_template":   schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for reused-session messages."},
 			"tags":                     stringMapAttribute("Tags applied to created sessions."),
-			"environment":              stringMapAttribute("Environment variables for created sessions."),
+			"environment":              sensitiveStringMapAttribute("Environment variables for created sessions."),
 			"params": schema.SingleNestedAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -417,6 +417,12 @@ func stringMapAttribute(description string) schema.MapAttribute {
 		PlanModifiers:       useStateMap(),
 		MarkdownDescription: description,
 	}
+}
+
+func sensitiveStringMapAttribute(description string) schema.MapAttribute {
+	attribute := stringMapAttribute(description)
+	attribute.Sensitive = true
+	return attribute
 }
 
 func stringListAttribute(description string) schema.ListAttribute {

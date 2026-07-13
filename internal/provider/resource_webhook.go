@@ -624,7 +624,7 @@ func webhookSessionConfigAttribute() schema.SingleNestedAttribute {
 		PlanModifiers:       useStateObject(),
 		MarkdownDescription: "Default session configuration.",
 		Attributes: map[string]schema.Attribute{
-			"environment":              stringMapAttribute("Environment variables for created sessions."),
+			"environment":              sensitiveStringMapAttribute("Environment variables for created sessions."),
 			"tags":                     stringMapAttribute("Tags applied to created sessions."),
 			"initial_message_template": schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for initial session messages."},
 			"reuse_message_template":   schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Template for reused-session messages."},
