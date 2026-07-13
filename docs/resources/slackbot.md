@@ -100,7 +100,7 @@ team settings are merged into sessions created by the bot.
 - `initial_message_template` (String) Template for new sessions.
 - `reuse_message_template` (String) Template for reused sessions.
 - `tags` (Map of String) Session tags.
-- `environment` (Map of String) Environment variables.
+- `environment` (Map of String, Sensitive) Environment variables.
 - `params` (Object) Session parameters.
 - `memory_key` (Map of String) Memory lookup tags.
 
@@ -117,7 +117,7 @@ team settings are merged into sessions created by the bot.
 - `user_id` (String) Owner user ID.
 - `created_at` (String) Creation timestamp.
 - `updated_at` (String) Last update timestamp.
-- `response_json` (String) Latest normalized API response JSON.
+- `response_json` (String, Sensitive) Latest normalized API response JSON.
 
 ## Import
 

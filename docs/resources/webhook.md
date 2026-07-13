@@ -148,7 +148,7 @@ resource "ccplant_webhook" "team_example" {
 
 ### Optional `session_config` Fields
 
-- `environment` (Map of String) Environment variables.
+- `environment` (Map of String, Sensitive) Environment variables.
 - `tags` (Map of String) Session tags.
 - `initial_message_template` (String) Template for new sessions.
 - `reuse_message_template` (String) Template for reused sessions.
@@ -173,7 +173,7 @@ resource "ccplant_webhook" "team_example" {
 - `delivery_count` (Number) Total delivery count.
 - `created_at` (String) Creation timestamp.
 - `updated_at` (String) Last update timestamp.
-- `response_json` (String) Latest normalized API response JSON.
+- `response_json` (String, Sensitive) Latest normalized API response JSON.
 
 ## Import
 

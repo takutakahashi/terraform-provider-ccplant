@@ -150,6 +150,7 @@ func (r *scheduleResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 						ElementType:         types.StringType,
 						Optional:            true,
 						Computed:            true,
+						Sensitive:           true,
 						MarkdownDescription: "Environment variables for the session.",
 					},
 					"tags": schema.MapAttribute{

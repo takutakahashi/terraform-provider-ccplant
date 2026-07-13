@@ -59,7 +59,7 @@ resource "ccplant_sandbox_policy" "team_example" {
 - `owner_id` (String) Owner user ID.
 - `created_at` (String) Creation timestamp.
 - `updated_at` (String) Last update timestamp.
-- `response_json` (String) Latest normalized API response.
+- `response_json` (String, Sensitive) Latest normalized API response.
 
 ## Import
 

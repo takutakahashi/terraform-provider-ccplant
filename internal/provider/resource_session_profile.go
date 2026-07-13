@@ -325,6 +325,7 @@ func profileConfigAttributes() map[string]schema.Attribute {
 			ElementType:         types.StringType,
 			Optional:            true,
 			Computed:            true,
+			Sensitive:           true,
 			MarkdownDescription: "Environment variables for sessions created from this profile.",
 		},
 		"tags": schema.MapAttribute{
