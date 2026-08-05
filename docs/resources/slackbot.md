@@ -46,7 +46,6 @@ resource "ccplant_slackbot" "team_example" {
   scope   = "team"
   team_id = var.team_id
 
-  teams                     = [var.team_id]
   allowed_event_types       = ["message", "app_mention"]
   allowed_channel_names     = ["eng-alerts"]
   max_sessions              = 5
@@ -68,8 +67,7 @@ resource "ccplant_slackbot" "team_example" {
 }
 ```
 
-`scope = "team"` makes the SlackBot owned by `team_id`. `teams` controls which
-team settings are merged into sessions created by the bot.
+`scope = "team"` makes the SlackBot owned by `team_id`.
 
 ## Terraform Schema
 
@@ -81,7 +79,6 @@ team settings are merged into sessions created by the bot.
 
 - `scope` (String) `user` or `team`. Create-only; changing it replaces the resource.
 - `team_id` (String) Required when `scope` is `team`. Create-only; changing it replaces the resource.
-- `teams` (List of String) Team IDs whose settings are merged into sessions.
 - `status` (String) SlackBot status.
 - `bot_token_secret_name` (String) Kubernetes Secret name containing Slack tokens.
 - `bot_token_secret_key` (String) Secret key for the bot token.
