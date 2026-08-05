@@ -25,7 +25,6 @@ type slackbotModel struct {
 	Name                   types.String `tfsdk:"name"`
 	Scope                  types.String `tfsdk:"scope"`
 	TeamID                 types.String `tfsdk:"team_id"`
-	Teams                  types.List   `tfsdk:"teams"`
 	Status                 types.String `tfsdk:"status"`
 	BotTokenSecretName     types.String `tfsdk:"bot_token_secret_name"`
 	BotTokenSecretKey      types.String `tfsdk:"bot_token_secret_key"`
@@ -65,7 +64,6 @@ type slackbotPayload struct {
 	UserID                 string                 `json:"user_id,omitempty"`
 	Scope                  string                 `json:"scope,omitempty"`
 	TeamID                 string                 `json:"team_id,omitempty"`
-	Teams                  []string               `json:"teams,omitempty"`
 	Status                 string                 `json:"status,omitempty"`
 	BotTokenSecretName     string                 `json:"bot_token_secret_name,omitempty"`
 	BotTokenSecretKey      string                 `json:"bot_token_secret_key,omitempty"`
@@ -128,12 +126,6 @@ func (r *slackbotResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:            true,
 				MarkdownDescription: "Team identifier. Required by agentapi-proxy when scope is `team`. This field is only sent on create; changing it requires replacement.",
 				PlanModifiers:       replaceOnChangeString(),
-			},
-			"teams": schema.ListAttribute{
-				ElementType:         types.StringType,
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Team IDs whose settings are merged into sessions created by this bot.",
 			},
 			"status":                    schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "SlackBot status."},
 			"bot_token_secret_name":     schema.StringAttribute{Optional: true, Computed: true, PlanModifiers: useStateString(), MarkdownDescription: "Kubernetes Secret name containing Slack tokens."},
@@ -236,7 +228,6 @@ func (r *slackbotResource) request(ctx context.Context, model slackbotModel, dia
 	payload := slackbotPayload{
 		Name:                   model.Name.ValueString(),
 		Status:                 optionalString(model.Status),
-		Teams:                  stringListFromTerraform(ctx, model.Teams, diags),
 		BotTokenSecretName:     optionalString(model.BotTokenSecretName),
 		BotTokenSecretKey:      optionalString(model.BotTokenSecretKey),
 		AllowedEventTypes:      stringListFromTerraform(ctx, model.AllowedEventTypes, diags),
@@ -267,7 +258,6 @@ func (r *slackbotResource) applyResponse(ctx context.Context, body []byte, model
 	model.UserID = types.StringValue(payload.UserID)
 	model.Scope = stringOrNull(payload.Scope)
 	model.TeamID = stringOrNull(payload.TeamID)
-	model.Teams = listToTerraformPreserveEmpty(ctx, payload.Teams, model.Teams, diags)
 	model.Status = stringOrNull(payload.Status)
 	model.BotTokenSecretName = stringOrEmptyState(payload.BotTokenSecretName, model.BotTokenSecretName)
 	model.BotTokenSecretKey = stringOrEmptyState(payload.BotTokenSecretKey, model.BotTokenSecretKey)

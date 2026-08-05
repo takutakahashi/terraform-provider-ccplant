@@ -25,7 +25,6 @@ resource "ccplant_slackbot" "team_example" {
   scope   = "team"
   team_id = var.team_id
 
-  teams                     = [var.team_id]
   allowed_event_types       = ["message", "app_mention"]
   allowed_channel_names     = ["engineering"]
   max_sessions              = 5
