@@ -2,10 +2,10 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -21,32 +21,36 @@ var (
 	_ resource.ResourceWithImportState = (*settingsResource)(nil)
 )
 
-// settingsResource manages the named /settings/:name endpoint. User and team
-// settings share the same API, but expose distinct Terraform attributes so a
-// configuration makes the ownership scope explicit.
+// settingsResource manages the named /settings/:name endpoint. The scope
+// attribute makes the ownership explicit and follows other scoped resources.
 type settingsResource struct {
-	typeName   string
-	identifier string
-	client     *client.Client
+	client *client.Client
 }
 
-func newSettingsResource(typeName, identifier string) func() resource.Resource {
-	return func() resource.Resource {
-		return &settingsResource{typeName: typeName, identifier: identifier}
-	}
+func newSettingsResource() resource.Resource {
+	return &settingsResource{}
 }
 
 func (r *settingsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_" + r.typeName
+	resp.TypeName = req.ProviderTypeName + "_settings"
 }
 
 func (r *settingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	identifierDescription := "User ID that owns these settings."
-	if r.identifier == "team_id" {
-		identifierDescription = "Team ID that owns these settings, in org/team-slug format."
-	}
-
 	attrs := map[string]schema.Attribute{
+		"scope": schema.StringAttribute{
+			Required:            true,
+			MarkdownDescription: "Ownership scope for the settings. Must be `user` or `team`.",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"name": schema.StringAttribute{
+			Required:            true,
+			MarkdownDescription: "Settings owner name: a user ID for user scope or an org/team-slug ID for team scope.",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
 		"body_json": schema.StringAttribute{
 			Required:            true,
 			Sensitive:           true,
@@ -56,17 +60,10 @@ func (r *settingsResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			Computed:            true,
 			MarkdownDescription: "Latest sanitized JSON response returned by agentapi-proxy.",
 		},
-		r.identifier: schema.StringAttribute{
-			Required:            true,
-			MarkdownDescription: identifierDescription,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.RequiresReplace(),
-			},
-		},
 	}
 
 	resp.Schema = schema.Schema{
-		MarkdownDescription: fmt.Sprintf("Manages agentapi-proxy %s.", strings.ReplaceAll(r.typeName, "_", " ")),
+		MarkdownDescription: "Manages user- or team-scoped agentapi-proxy settings.",
 		Attributes:          attrs,
 	}
 }
@@ -85,10 +82,14 @@ func (r *settingsResource) Configure(_ context.Context, req resource.ConfigureRe
 }
 
 func (r *settingsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var name, bodyJSON types.String
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(r.identifier), &name)...)
+	var scope, name, bodyJSON types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("scope"), &scope)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &name)...)
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("body_json"), &bodyJSON)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !validateSettingsScope(scope, &resp.Diagnostics) {
 		return
 	}
 
@@ -103,14 +104,15 @@ func (r *settingsResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(r.identifier), name)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("scope"), scope)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("body_json"), bodyJSON)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("response_json"), normalizeJSON(responseBody))...)
 }
 
 func (r *settingsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var name types.String
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(r.identifier), &name)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &name)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -129,10 +131,14 @@ func (r *settingsResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 func (r *settingsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var name, bodyJSON types.String
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root(r.identifier), &name)...)
+	var scope, name, bodyJSON types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("scope"), &scope)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &name)...)
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("body_json"), &bodyJSON)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !validateSettingsScope(scope, &resp.Diagnostics) {
 		return
 	}
 
@@ -147,14 +153,15 @@ func (r *settingsResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(r.identifier), name)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("scope"), scope)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("body_json"), bodyJSON)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("response_json"), normalizeJSON(responseBody))...)
 }
 
 func (r *settingsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var name types.String
-	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(r.identifier), &name)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &name)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -166,7 +173,25 @@ func (r *settingsResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 func (r *settingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(r.identifier), req.ID)...)
+	parts := strings.SplitN(req.ID, ":", 2)
+	if len(parts) != 2 || (parts[0] != "user" && parts[0] != "team") || parts[1] == "" {
+		resp.Diagnostics.AddError("Invalid import identifier", "Use scope:name, for example user:alice or team:ccplant/platform.")
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("scope"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), parts[1])...)
+}
+
+func validateSettingsScope(scope types.String, diagnostics *diag.Diagnostics) bool {
+	if scope.IsNull() || scope.IsUnknown() {
+		diagnostics.AddAttributeError(path.Root("scope"), "Missing settings scope", "scope must be known and non-null.")
+		return false
+	}
+	if scope.ValueString() != "user" && scope.ValueString() != "team" {
+		diagnostics.AddAttributeError(path.Root("scope"), "Invalid settings scope", "scope must be either user or team.")
+		return false
+	}
+	return true
 }
 
 func (r *settingsResource) itemPath(name string) string {

@@ -37,16 +37,20 @@ resource "ccplant_memory" "team_notes" {
   })
 }
 
-resource "ccplant_user_settings" "me" {
-  user_id = "alice"
+resource "ccplant_settings" "me" {
+  scope = "user"
+  name  = "alice"
+
   body_json = jsonencode({
     auth_mode       = "oauth"
     enabled_plugins = ["commit@claude-plugins-official"]
   })
 }
 
-resource "ccplant_team_settings" "platform" {
-  team_id = "ccplant/platform"
+resource "ccplant_settings" "platform" {
+  scope = "team"
+  name  = "ccplant/platform"
+
   body_json = jsonencode({
     env_vars = {
       ENVIRONMENT = "production"
@@ -62,8 +66,7 @@ Provider configuration may also be supplied with `CCPLANT_ENDPOINT` and
 
 ## Resources
 
-- `ccplant_user_settings`
-- `ccplant_team_settings`
+- `ccplant_settings`
 - `ccplant_webhook`
 - `ccplant_schedule`
 - `ccplant_slackbot`
@@ -77,13 +80,14 @@ The JSON-backed collection resources accept:
 - `id`: resource ID returned by agentapi-proxy.
 - `response_json`: latest JSON response from agentapi-proxy.
 
-Settings resources use `user_id` or `team_id` as their stable identifier.
-Their `body_json` attribute is marked sensitive because settings can contain
-credentials. They can be imported with that identifier, for example:
+The settings resource uses `scope` (`user` or `team`) and `name` as its stable
+identifier. For user scope, `name` is the user ID. For team scope, it is the
+`org/team-slug` ID. Its `body_json` attribute is marked sensitive because
+settings can contain credentials. Import IDs use `scope:name`:
 
 ```shell
-terraform import ccplant_user_settings.me alice
-terraform import ccplant_team_settings.platform ccplant/platform
+terraform import ccplant_settings.me user:alice
+terraform import ccplant_settings.platform team:ccplant/platform
 ```
 
 ## Data Sources
