@@ -41,21 +41,23 @@ resource "ccplant_settings" "me" {
   scope = "user"
   name  = "alice"
 
-  body_json = jsonencode({
-    auth_mode       = "oauth"
-    enabled_plugins = ["commit@claude-plugins-official"]
-  })
+  auth_mode            = "oauth"
+  enabled_plugins      = ["commit@claude-plugins-official"]
+  notification_channels = ["web"]
 }
 
 resource "ccplant_settings" "platform" {
   scope = "team"
   name  = "ccplant/platform"
 
-  body_json = jsonencode({
-    env_vars = {
-      ENVIRONMENT = "production"
-    }
-  })
+  bedrock = {
+    enabled = true
+    model   = "anthropic.claude-sonnet-4-20250514-v1:0"
+  }
+
+  env_vars = {
+    ENVIRONMENT = "production"
+  }
 }
 
 data "ccplant_sessions" "all" {}
@@ -82,8 +84,9 @@ The JSON-backed collection resources accept:
 
 The settings resource uses `scope` (`user` or `team`) and `name` as its stable
 identifier. For user scope, `name` is the user ID. For team scope, it is the
-`org/team-slug` ID. Its `body_json` attribute is marked sensitive because
-settings can contain credentials. Import IDs use `scope:name`:
+`org/team-slug` ID. Secret-bearing attributes such as OAuth tokens, Bedrock
+credentials, MCP environment variables and custom environment variables are
+marked sensitive. Import IDs use `scope:name`:
 
 ```shell
 terraform import ccplant_settings.me user:alice

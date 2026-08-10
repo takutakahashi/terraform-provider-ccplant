@@ -2,22 +2,32 @@ resource "ccplant_settings" "user" {
   scope = "user"
   name  = "alice"
 
-  body_json = jsonencode({
-    auth_mode = "oauth"
-    env_vars = {
-      MANAGED_BY = "terraform"
-    }
-  })
+  auth_mode       = "oauth"
+  enabled_plugins = ["commit@claude-plugins-official"]
+
+  env_vars = {
+    MANAGED_BY = "terraform"
+  }
 }
 
 resource "ccplant_settings" "team" {
   scope = "team"
   name  = "ccplant/platform"
 
-  body_json = jsonencode({
-    enabled_plugins = ["commit@claude-plugins-official"]
-    env_vars = {
-      MANAGED_BY = "terraform"
+  bedrock = {
+    enabled = true
+    model   = "anthropic.claude-sonnet-4-20250514-v1:0"
+  }
+
+  mcp_servers = {
+    github = {
+      type    = "stdio"
+      command = "npx"
+      args    = ["-y", "@modelcontextprotocol/server-github"]
     }
-  })
+  }
+
+  env_vars = {
+    MANAGED_BY = "terraform"
+  }
 }

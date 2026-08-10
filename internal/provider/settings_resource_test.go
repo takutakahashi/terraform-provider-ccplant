@@ -1,8 +1,10 @@
 package provider
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -27,19 +29,51 @@ func TestSettingsResourceItemPath(t *testing.T) {
 	}
 }
 
+func TestSettingsRequestJSON(t *testing.T) {
+	model := settingsResourceModel{
+		Scope:          types.StringValue("team"),
+		Name:           types.StringValue("ccplant/platform"),
+		AuthMode:       types.StringValue("bedrock"),
+		EnabledPlugins: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("commit@example")}),
+		EnvVars: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"MANAGED_BY": types.StringValue("terraform"),
+		}),
+	}
+
+	var diagnostics diag.Diagnostics
+	body, ok := settingsRequestJSON(model, &diagnostics)
+	if !ok || diagnostics.HasError() {
+		t.Fatalf("settingsRequestJSON() diagnostics = %v", diagnostics)
+	}
+
+	var got map[string]any
+	if err := json.Unmarshal(body, &got); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if got["auth_mode"] != "bedrock" {
+		t.Fatalf("auth_mode = %v, want bedrock", got["auth_mode"])
+	}
+	env := got["env_vars"].(map[string]any)
+	if env["MANAGED_BY"] != "terraform" {
+		t.Fatalf("env_vars.MANAGED_BY = %v, want terraform", env["MANAGED_BY"])
+	}
+}
+
 func TestValidateSettingsScope(t *testing.T) {
 	for _, scope := range []string{"user", "team"} {
 		var diagnostics diag.Diagnostics
-		if !validateSettingsScope(types.StringValue(scope), &diagnostics) {
-			t.Fatalf("validateSettingsScope(%q) returned false: %v", scope, diagnostics)
+		model := settingsResourceModel{Scope: types.StringValue(scope)}
+		if !validateSettingsModel(model, &diagnostics) {
+			t.Fatalf("validateSettingsModel(%q) returned false: %v", scope, diagnostics)
 		}
 	}
 
 	var diagnostics diag.Diagnostics
-	if validateSettingsScope(types.StringValue("organization"), &diagnostics) {
-		t.Fatal("validateSettingsScope(organization) returned true")
+	model := settingsResourceModel{Scope: types.StringValue("organization")}
+	if validateSettingsModel(model, &diagnostics) {
+		t.Fatal("validateSettingsModel(organization) returned true")
 	}
 	if !diagnostics.HasError() {
-		t.Fatal("validateSettingsScope(organization) did not return an error diagnostic")
+		t.Fatal("validateSettingsModel(organization) did not return an error diagnostic")
 	}
 }
