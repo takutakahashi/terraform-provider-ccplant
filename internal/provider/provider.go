@@ -90,6 +90,8 @@ func (p *ccplantProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 func (p *ccplantProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		newSettingsResource("user_settings", "user_id"),
+		newSettingsResource("team_settings", "team_id"),
 		newJSONResource("webhook", "/webhooks"),
 		newJSONResource("schedule", "/schedules"),
 		newJSONResource("slackbot", "/slackbots"),

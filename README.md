@@ -37,6 +37,23 @@ resource "ccplant_memory" "team_notes" {
   })
 }
 
+resource "ccplant_user_settings" "me" {
+  user_id = "alice"
+  body_json = jsonencode({
+    auth_mode       = "oauth"
+    enabled_plugins = ["commit@claude-plugins-official"]
+  })
+}
+
+resource "ccplant_team_settings" "platform" {
+  team_id = "ccplant/platform"
+  body_json = jsonencode({
+    env_vars = {
+      ENVIRONMENT = "production"
+    }
+  })
+}
+
 data "ccplant_sessions" "all" {}
 ```
 
@@ -45,6 +62,8 @@ Provider configuration may also be supplied with `CCPLANT_ENDPOINT` and
 
 ## Resources
 
+- `ccplant_user_settings`
+- `ccplant_team_settings`
 - `ccplant_webhook`
 - `ccplant_schedule`
 - `ccplant_slackbot`
@@ -52,11 +71,20 @@ Provider configuration may also be supplied with `CCPLANT_ENDPOINT` and
 - `ccplant_session_profile`
 - `ccplant_sandbox_policy`
 
-Each resource currently accepts:
+The JSON-backed collection resources accept:
 
 - `body_json`: JSON request body for create and update.
 - `id`: resource ID returned by agentapi-proxy.
 - `response_json`: latest JSON response from agentapi-proxy.
+
+Settings resources use `user_id` or `team_id` as their stable identifier.
+Their `body_json` attribute is marked sensitive because settings can contain
+credentials. They can be imported with that identifier, for example:
+
+```shell
+terraform import ccplant_user_settings.me alice
+terraform import ccplant_team_settings.platform ccplant/platform
+```
 
 ## Data Sources
 
