@@ -1,7 +1,8 @@
 terraform {
   required_providers {
     ccplant = {
-      source = "takutakahashi/ccplant"
+      source  = "takutakahashi/ccplant"
+      version = "~> 0.1"
     }
   }
 }
