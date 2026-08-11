@@ -25,6 +25,30 @@ provider "ccplant" {
   endpoint = var.agentapi_proxy_endpoint
   api_key  = var.agentapi_proxy_api_key
 }
+resource "ccplant_settings" "me" {
+  scope = "user"
+  name  = "alice"
+
+  auth_mode            = "oauth"
+  enabled_plugins      = ["commit@claude-plugins-official"]
+  notification_channels = ["web"]
+}
+
+resource "ccplant_settings" "platform" {
+  scope = "team"
+  name  = "ccplant/platform"
+
+  bedrock = {
+    enabled = true
+    model   = "anthropic.claude-sonnet-4-20250514-v1:0"
+  }
+
+  env_vars = {
+    ENVIRONMENT = "production"
+  }
+}
+
+data "ccplant_sessions" "all" {}
 ```
 
 `endpoint` may also be set with `CCPLANT_ENDPOINT`.
@@ -38,6 +62,7 @@ Resources support create, read, update, delete, and import by agentapi-proxy
 resource ID. All resources expose typed Terraform attributes based on the
 agentapi-proxy API request and response schemas.
 
+- [`ccplant_settings`](docs/resources/settings.md)
 - [`ccplant_memory`](docs/resources/memory.md)
 - [`ccplant_session_profile`](docs/resources/session_profile.md)
 - [`ccplant_sandbox_policy`](docs/resources/sandbox_policy.md)
@@ -52,6 +77,17 @@ API response.
 Webhook secrets and Slack tokens are marked sensitive, but Terraform still
 stores sensitive values in state. Prefer server-side Secret references for Slack
 tokens when possible.
+
+The settings resource uses `scope` (`user` or `team`) and `name` as its stable
+identifier. For user scope, `name` is the user ID. For team scope, it is the
+`org/team-slug` ID. Secret-bearing attributes such as OAuth tokens, Bedrock
+credentials, MCP environment variables and custom environment variables are
+marked sensitive. Import IDs use `scope:name`:
+
+```shell
+terraform import ccplant_settings.me user:alice
+terraform import ccplant_settings.platform team:ccplant/platform
+```
 
 ## Data Sources
 
